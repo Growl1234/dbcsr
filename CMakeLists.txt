@@ -81,6 +81,9 @@ option(USE_MPI "Build with MPI support" OFF)
 option(BUILD_TESTING "Build dbcsr unit tests" OFF)
 option(USE_LIBXS "Use LIBXS for host-side Small Matrix Multiplication" OFF)
 
+cmake_dependent_option(USE_LIBXSMM "Use LIBXSMM for JIT-compiled GEMM kernels"
+                       OFF "USE_LIBXS" OFF)
+
 option(WITH_CUDA_PROFILING "Enable profiling within CUDA" OFF)
 option(WITH_HIP_PROFILING "Enable profiling within HIP" OFF)
 
@@ -105,7 +108,7 @@ set(USE_ACCEL
     "none"
     CACHE
       STRING
-      "BBuild with acceleration support (none (default value), opencl, cuda, hip)"
+      "BBuild with acceleration support (none (none is the default value), opencl, cuda, hip)"
 )
 set(_DBCSR_SUPPORTED_ACCEL_VALUES none opencl cuda hip)
 set_property(CACHE USE_ACCEL PROPERTY STRINGS ${_DBCSR_SUPPORTED_ACCEL_VALUES})
@@ -257,7 +260,7 @@ if (DBCSR_WITH_ACCEL)
   set(DBCSR_ACC_HEADER acc/acc.h acc/acc_bench.h acc/acc_libsmm.h)
 endif ()
 
-if (USE_ACCEL STREQUAL "opencl")
+if (USE_ACCEL MATCHES "opencl")
   if (DEFINED ENV{CMPLR_ROOT})
     list(APPEND CMAKE_PREFIX_PATH "$ENV{CMPLR_ROOT}")
   endif ()

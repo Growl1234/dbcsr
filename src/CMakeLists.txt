@@ -242,6 +242,37 @@ target_link_libraries(
          $<$<BOOL:${USE_OPENMP}>:OpenMP::OpenMP_CXX>
          $<$<BOOL:${USE_OPENMP}>:OpenMP::OpenMP_Fortran>)
 
+target_compile_definitions(
+  dbcsr
+  PRIVATE __STATM_TOTAL
+          $<$<BOOL:${USE_LIBXS}>:__LIBXS>
+          $<$<BOOL:${USE_LIBXS}>:__BLAS>
+          $<$<BOOL:${USE_MPI}>:__parallel>
+          $<$<BOOL:${USE_MPI_F08}>:__USE_MPI_F08>
+          $<$<BOOL:${APPLE}>:__NO_STATM_ACCESS>
+          $<$<CONFIG:Release>:NDEBUG>
+          $<$<BOOL:${USE_LIBXSMM}>:__LIBXSMM>
+          $<$<BOOL:${USE_LIBXSMM}>:${LIBXSMM_COMPILE_DEFINITIONS}>)
+
+# Instead of resetting the compiler for MPI, we are adding the compiler flags
+# otherwise added by the mpifort-wrapper directly; based on hints from:
+# https://cmake.org/pipermail/cmake/2012-June/050991.html Here we assume that
+# the MPI implementation found uses the same compiler as the Fortran compiler we
+# found prior. Otherwise we might be adding incompatible compiler flags at this
+# point. when built against MPI, a dbcsr consumer has to specify the MPI flags
+# as well, therefore: PUBLIC
+target_link_libraries(
+  dbcsr
+  PUBLIC $<$<BOOL:${USE_MPI}>:MPI::MPI_Fortran>
+         ${LAPACK_LIBRARIES}
+         $<$<BOOL:${USE_LIBXS}>:libxs::libxs>
+         # replace by libxsmm::libxsmm if libxsmm uses cmake
+         ${BLAS_LIBRARIES}
+         $<$<BOOL:${USE_LIBXSMM}>:dbcsr::libxsmm>
+         $<$<BOOL:${USE_OPENMP}>:OpenMP::OpenMP_C>
+         $<$<BOOL:${USE_OPENMP}>:OpenMP::OpenMP_CXX>
+         $<$<BOOL:${USE_OPENMP}>:OpenMP::OpenMP_Fortran>)
+
 if (BLAS_LIBRARIES MATCHES "mkl_")
   target_compile_definitions(dbcsr PRIVATE __MKL)
 endif ()
@@ -292,7 +323,7 @@ endif ()
 
 # OpenCL SMM is provided by LIBXSTREAM (no local subdirectory)
 
-if (DBCSR_WITH_ACCEL)
+if (USE_ACCEL MATCHES "opencl|cuda|hip")
   target_compile_definitions(
     dbcsr
     PRIVATE __DBCSR_ACC
