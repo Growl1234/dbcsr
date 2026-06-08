@@ -73,11 +73,17 @@ set(dbcsr_APIVERSION ${VERSION_MAJOR}.${VERSION_MINOR})
 # OPTIONS
 include(CMakeDependentOption)
 
-option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(USE_OPENMP "Build with OpenMP support" ON)
-option(USE_MPI "Build with MPI support" ON)
-option(USE_MPI_F08 "Build with the mpi_f08 module support" OFF)
+option(USE_MPI "Build with MPI support" OFF)
 option(BUILD_TESTING "Build dbcsr unit tests" OFF)
+option(USE_LIBXS "Use LIBXS for host-side Small Matrix Multiplication" OFF)
+option(USE_LIBXSMM "Use LIBXSMM for JIT-compiled GEMM kernels" OFF)
+option(WITH_CUDA_PROFILING "Enable profiling within CUDA" OFF)
+option(WITH_HIP_PROFILING "Enable profiling within HIP" OFF)
+
+cmake_dependent_option(USE_MPI_F08 "Build with the mpi_f08 module support" OFF
+                       "USE_MPI" OFF) # MPI_F08 is a module included in MPI
 cmake_dependent_option(
   WITH_C_API "Build the C API (ISO_C_BINDINGS)" ON "USE_MPI" OFF
 )# the ISO_C_BINDINGS require MPI unconditionally
@@ -116,9 +122,6 @@ set(WITH_GPU_PARAMS "${WITH_GPU}")
 set_property(CACHE WITH_GPU PROPERTY STRINGS ${SUPPORTED_CUDA_ARCHITECTURES}
                                      ${SUPPORTED_HIP_ARCHITECTURES})
 
-option(WITH_CUDA_PROFILING "Enable profiling within CUDA" OFF)
-option(WITH_HIP_PROFILING "Enable profiling within HIP" OFF)
-
 # =================================================================================================
 # LANGUAGES AND TESTING
 enable_language(Fortran)
@@ -148,9 +151,6 @@ endif ()
 # Ensure all targets (including fetched dependencies) are built with -fPIC so
 # they can be linked into shared libraries.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-option(USE_LIBXS "Use LIBXS for host-side Small Matrix Multiplication" OFF)
-option(USE_LIBXSMM "Use LIBXSMM for JIT-compiled GEMM kernels" OFF)
 
 if (USE_LIBXS)
   find_package(libxs CONFIG QUIET)
