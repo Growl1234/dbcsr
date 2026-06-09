@@ -73,9 +73,10 @@ set(DBCSR_TESTS_FTN
     dbcsr_tas_unittest
     dbcsr_test_csr_conversions)
 
-if (DBCSR_WITH_ACCEL)
+# Make explicit what USE_ACCEL value should trigger this part of the code
+if (USE_ACCEL MATCHES "hip|cuda|opencl")
   set(DBCSR_TESTS_BACKEND dbcsr_acc_test)
-  if (TARGET DBCSR::LIBXS)
+  if (USE_LIBXS)
     list(APPEND DBCSR_TESTS_BACKEND acc_bench)
   endif ()
 endif ()
@@ -195,7 +196,7 @@ if (NOT USE_MPI)
       target_link_libraries(${dbcsr_test_backend} PRIVATE DBCSR::LIBXS)
       target_compile_definitions(${dbcsr_test_backend} PRIVATE __LIBXS)
     endif ()
-    if (LIBXSMM_FOUND OR LIBXSMM_FETCHED)
+    if (USE_LIBXSMM)
       target_compile_definitions(
         ${dbcsr_test_backend} PRIVATE __LIBXSMM ${LIBXSMM_COMPILE_DEFINITIONS})
       target_include_directories(${dbcsr_test_backend}

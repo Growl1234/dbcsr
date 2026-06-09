@@ -87,8 +87,6 @@ cmake_dependent_option(USE_LIBXSMM "Use LIBXSMM for JIT-compiled GEMM kernels"
 option(WITH_CUDA_PROFILING "Enable profiling within CUDA" OFF)
 option(WITH_HIP_PROFILING "Enable profiling within HIP" OFF)
 
-cmake_dependent_option(USE_LIBXSMM "Use LIBXSMM for JIT-compiled GEMM kernels"
-                       OFF "USE_LIBXS" OFF)
 cmake_dependent_option(USE_MPI_F08 "Build with the mpi_f08 module support" OFF
                        "USE_MPI" OFF) # MPI_F08 is a module included in MPI
 cmake_dependent_option(
@@ -122,7 +120,7 @@ if (NOT USE_ACCEL IN_LIST _DBCSR_SUPPORTED_ACCEL_VALUES)
 endif ()
 
 set(DBCSR_WITH_ACCEL OFF)
-if (NOT USE_ACCEL STREQUAL "none")
+if (USE_ACCEL MATCHES "hip|cuda|opencl")
   set(DBCSR_WITH_ACCEL ON)
 endif ()
 
@@ -162,19 +160,14 @@ set_property(CACHE WITH_GPU PROPERTY STRINGS ${SUPPORTED_CUDA_ARCHITECTURES}
 # =================================================================================================
 # LANGUAGES AND TESTING
 
-if ((WITH_C_API AND WITH_EXAMPLES) OR DBCSR_WITH_ACCEL)
-  enable_language(CXX)
-  enable_language(C)
+if (NOT DEFINED CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif ()
 
-  if (NOT DEFINED CMAKE_CXX_STANDARD)
-    set(CMAKE_CXX_STANDARD 14)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-  endif ()
-
-  if (NOT DEFINED CMAKE_C_STANDARD)
-    set(CMAKE_C_STANDARD 11)
-    set(CMAKE_C_STANDARD_REQUIRED ON)
-  endif ()
+if (NOT DEFINED CMAKE_C_STANDARD)
+  set(CMAKE_C_STANDARD 11)
+  set(CMAKE_C_STANDARD_REQUIRED ON)
 endif ()
 
 # =================================== OpenMP
@@ -191,13 +184,12 @@ if (USE_LIBXS)
   find_package(libxs REQUIRED)
   # not needed at all
   add_library(DBCSR::LIBXS ALIAS libxs::libxs)
-endif ()
 
-# libxsmm can only be activated when libxs is on.
-if (USE_LIBXSMM)
-  find_package(LIBXSMM REQUIRED)
+  # libxsmm can only be activated when libxs is on.
+  if (USE_LIBXSMM)
+    find_package(LIBXSMM REQUIRED)
+  endif ()
 endif ()
-
 # =================================== BLAS & LAPACK, PkgConfig
 find_package(LAPACK REQUIRED) # needed for some of the integrated test routines,
                               # also calls find_package(BLAS)
